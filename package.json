@@ -1,0 +1,23 @@
+{
+  "name": "ggim",
+  "version": "1.0.0",
+  "description": "A library reservation intermediate system using AWS Lambda",
+  "main": "src/lambda/index.js",
+  "scripts": {
+    "test": "jest --verbose",
+    "test:coverage": "jest --coverage"
+  },
+  "author": "Janghan Noh",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.149",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.15.3",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.3.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "esbuild": "^0.25.3"
+  }
+}

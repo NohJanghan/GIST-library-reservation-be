@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  gist-library-reservation-be
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 30
+
+    Tracing: Active
+    Handler: index.handler
+    Architectures:
+    - x86_64
+    Environment:
+      Variables:
+        # 여기 있는 내용은 git에 업로드 됨!!
+        GIST_LIBRARY_URL: https://library.gist.ac.kr
+        GIST_LIBRARY_PORT: 8443
+  Api:
+    TracingEnabled: true
+Resources:
+  # FacilityFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: .
+  #     Handler: src/lambda/index.facility
+  #     Events:
+  #       getFacility:
+  #         Type: HttpApi # or Api
+  #         Properties:
+  #           Path: /facility
+  #           Method: get
+  #       getRoom:
+  #         Type: HttpApi
+  #         Properties:
+  #           Path: /facility/{roomId}
+  #           Method: get
+  #   Metadata: # Manage esbuild properties
+  #     BuildMethod: esbuild
+  #     BuildProperties:
+  #       Minify: true
+  #       Target: es2020
+  #       # Sourcemap: true
+  #       EntryPoints:
+  #       - src/lambda/index.ts
+  # ReservationFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: .
+  #     Handler: src/lambda/index.reservation
+  #     Events:
+  #       getMyReservation:
+  #         Type: HttpApi # or Api
+  #         Properties:
+  #           Path: /reservation
+  #           Method: get
+  #       postReservation:
+  #         Type: HttpApi
+  #         Properties:
+  #           Path: /reservation
+  #           Method: post
+  #       deleteReservation:
+  #         Type: HttpApi
+  #         Properties:
+  #           Path: /reservation
+  #           Method: delete
+  #   Metadata: # Manage esbuild properties
+  #     BuildMethod: esbuild
+  #     BuildProperties:
+  #       Minify: true
+  #       Target: es2020
+  #       # Sourcemap: true
+  #       EntryPoints:
+  #       - src/lambda/index.ts
+  AuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/lambda/index.auth
+      Events:
+        getUserInfo:
+          Type: HttpApi # or Api
+          Properties:
+            Path: /auth
+            Method: get
+        login:
+          Type: HttpApi
+          Properties:
+            Path: /auth
+            Method: post
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        # Sourcemap: true
+        EntryPoints:
+        - src/lambda/index.ts
+
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  AuthFunctionApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/auth/"
+  AuthFunction:
+    Description: Hello World Lambda Function ARN
+    Value: !GetAtt AuthFunction.Arn
+  AuthFunctionrole:
+    Description: Implicit IAM Role created for Hello World function
+    Value: !GetAtt AuthFunctionRole.Arn
