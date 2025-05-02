@@ -1,23 +1,44 @@
 #!/bin/bash
 
-# 설정 (samconfig.toml에 기본값 정의)
-# STACK_NAME="gist-library-reservation-be"
-# REGION="ap-northeast-2"  # 필요한 경우 리전 변경
+# 오류 발생 시 스크립트 중단 설정
+set -e
 
-echo "🔄 SAM sync 시작: 스택 이름 = $STACK_NAME"
+# samconfig.toml 파일 경로
+SAMCONFIG_FILE="samconfig.toml"
 
-# 1. SAM Sync (코드/리소스를 스택에 반영)
-sam sync
+# samconfig.toml 파일 존재 확인
+if [ ! -f "$SAMCONFIG_FILE" ]; then
+  echo -e "❌ $SAMCONFIG_FILE 파일을 찾을 수 없습니다."
+  exit 1
+fi
 
-if [ $? -ne 0 ]; then
+# samconfig.toml에서 stack_name 추출
+STACK_NAME=$(awk -F'=' '/stack_name/ {gsub(/"/, "", $2); gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}' "$SAMCONFIG_FILE")
+
+# stack_name 검증
+if [ -z "$STACK_NAME" ]; then
+  echo -e "❌ samconfig.toml에서 stack_name을 찾을 수 없습니다."
+  exit 1
+fi
+
+# REGION은 AWS CLI 설정에서 가져오기
+REGION=$(aws configure get region)
+if [ -z "$REGION" ]; then
+  echo -e "⚠️ AWS CLI에서 리전 정보를 찾을 수 없습니다. 기본값 사용."
+  REGION="ap-northeast-2"
+fi
+
+echo "🔄 SAM sync 시작: 스택 이름 = $STACK_NAME, 리전 = $REGION"
+
+# SAM Sync 실행
+if ! sam sync --stack-name "$STACK_NAME" --region "$REGION"; then
   echo "❌ SAM sync 실패. 스크립트를 중단합니다."
   exit 1
 fi
 
 echo "⏳ 테스트가 끝나 스택을 삭제합니다..."
 
-# 2. 스택 삭제
-echo ""
+# 스택 삭제
 echo "🧹 스택 삭제 중: $STACK_NAME"
 aws cloudformation delete-stack --stack-name "$STACK_NAME" --region "$REGION"
 
