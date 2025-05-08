@@ -47,7 +47,7 @@ export const postAuthHandler = async (event: APIGatewayProxyEventV2): Promise<AP
             }
         }
         const data: LoginRequest = JSON.parse(event.body as string);
-        // TODO: Use Zod to verify the data in runtime
+        // TODO: Use Zod to verify the data in runtime and return 400 if invalid
 
         // 2. Call the bussiness logic
         const auth = await authService.login(data.userId, data.userPwd).catch((error) => {
