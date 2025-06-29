@@ -245,24 +245,28 @@ describe('LibraryFacilityAdapter', () => {
 
         it('getRoom API 호출 중 하나가 실패 시 에러를 던져야 함', async () => {
             // Arrange
-            (global.fetch as jest.Mock)
-                .mockResolvedValueOnce({ // getFacilityInfo 응답 (성공)
-                    ok: true,
-                    json: async () => mockFacilityInfoResponse,
-                })
-                .mockResolvedValueOnce({ // getRoom for 202 응답 (성공)
-                    ok: true,
-                    json: async () => ({ data: mockGetRoomData202 }),
-                })
-                .mockResolvedValueOnce({ // getRoom for 203 응답 (실패)
-                    ok: false,
-                    status: 500,
-                    statusText: 'Room Error',
-                })
-                .mockResolvedValue({ // 다른 응답은 성공
-                    ok: true,
-                    json: async () => ({ data: mockGetRoomData219 }),
-                });
+            (global.fetch as jest.Mock).mockImplementation(async (url: string, options: RequestInit) => {
+                const urlString = url.toString();
+                if (urlString.endsWith('/getFacilityInfo')) {
+                    return {
+                        ok: true,
+                        json: async () => mockFacilityInfoResponse,
+                    };
+                }
+                if (urlString.endsWith('/getRoom')) {
+                    const body = JSON.parse(options.body as string);
+                    if (body.ROOM_ID === 202) {
+                        return { ok: true, json: async () => ({ data: mockGetRoomData202 }) };
+                    }
+                    if (body.ROOM_ID === 203) {
+                        return { ok: false, status: 500, statusText: 'Room Error' };
+                    }
+                    if (body.ROOM_ID === 219) {
+                        return { ok: true, json: async () => ({ data: mockGetRoomData219 }) };
+                    }
+                }
+                return { ok: false, status: 404, statusText: 'Not Found' };
+            });
 
             // Act & Assert
             await expect(libraryFacilityAdapter.getAllFacilityInfo(accessToken, mockDate))
