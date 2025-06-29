@@ -20,6 +20,9 @@
 - Branches use `main`, `feature/<name>` or `fix/<name>` naming.
 - Use concise English commit messages and merge commits.
 
-## Running Locally
-- Use `sam local start-api` for local testing.
-- Deploy with `sam build` and `sam deploy`.
+# Development Process: TDD Guideline
+- Write Test First: For each task, start by writing a failing test that defines the expected behavior.
+- Red → Green: Run the test (it should fail), then write minimal code to make it pass.
+- Refactor: Clean up the implementation without breaking tests.
+- Repeat: Continue this Red-Green-Refactor cycle consistently.
+- Test Coverage: Aim for 80%+ coverage, including edge cases.

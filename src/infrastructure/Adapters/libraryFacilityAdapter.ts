@@ -1,3 +1,4 @@
+import { backoff } from '../../common/utils/backoff';
 import { FacilityRepository } from '../../domain/facility/facilityRepository.interface';
 import { allFacilityInfo } from '../../domain/facility/facilityService';
 import { FacilityGroup, FacilityInfo, CommonFacilityInfo} from '../../domain/facility/facility';
@@ -146,26 +147,17 @@ export class LibraryFacilityAdapter implements FacilityRepository {
         authHeader: string,
         date: YYYYMMDD
     ): Promise<void> {
-        // 모든 시설에 대한 API 요청 생성
-        const roomRequests = Array.from(facilityGroups.values())
-            .flatMap(group => group.facilities.map(facility => ({
-                facility,
-                groupId: group.id,
-                request: this.fetchRoomInfo(facility.id, date, authHeader)
-            })));
+        const roomRequestTasks = Array.from(facilityGroups.values())
+            .flatMap(group => group.facilities.map(facility => async () => {
+                try {
+                    const response = await this.fetchRoomInfo(facility.id, date, authHeader);
+                    return { facility, groupId: group.id, response };
+                } catch (error) {
+                    throw new Error(`Failed to fetch room details for facility ${facility.id}`);
+                }
+            }));
 
-        // 병렬로 모든 요청 실행
-        const roomDetailsPromises = roomRequests.map(async ({ facility, groupId, request }) => {
-            try {
-                const response = await request;
-                return { facility, groupId, response };
-            } catch (error) {
-                throw new Error(`Failed to fetch room details for facility ${facility.id}`);
-            }
-        });
-
-        // 모든 결과 처리
-        const roomDetails = await Promise.all(roomDetailsPromises);
+        const roomDetails = await Promise.all(backoff(roomRequestTasks));
 
         // 결과 데이터로 시설 및 그룹 정보 업데이트
         roomDetails.forEach(({ facility, groupId, response }) => {
